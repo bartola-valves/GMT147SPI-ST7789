@@ -103,11 +103,16 @@ void LCD_setSPIperiph(spi_inst_t *s)
 
 void initSPI()
 {
-    spi_init(st7789_spi, 1000000); // 1 MHz - breadboarding speed
+    // ST7789P3 Working Configuration: 4 MHz SPI speed
+    // Tested and verified working on breadboard with 172x320 ST7789P3 display
+    // Can be increased to 62.5 MHz for PCB implementations
+    // Date: 6th Oct 2025 - BASELINE WORKING CONFIGURATION
+    spi_init(st7789_spi, 4000000); // 4 MHz - stable breadboard speed
 
-    // ST7789P3 Testing: Changed from SPI Mode 3 (CPOL_1, CPHA_1) to Mode 0 (CPOL_0, CPHA_0)
-    // ST7789P3 variant typically requires Mode 0 for reliable operation
-    // Date: 6th Oct 2025 - Testing with 172x320 ST7789P3 display
+    // ST7789P3 CRITICAL: Must use SPI Mode 0 (CPOL_0, CPHA_0) for P3 variant
+    // Previous Mode 3 (CPOL_1, CPHA_1) caused hanging on framebuffer writes
+    // This setting MUST be consistent across all SPI operations
+    // Date: 6th Oct 2025 - BASELINE WORKING CONFIGURATION
     spi_set_format(st7789_spi, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
     gpio_set_function(st7789_pinSCK, GPIO_FUNC_SPI);

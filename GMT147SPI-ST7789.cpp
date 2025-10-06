@@ -1,3 +1,15 @@
+/**
+ * @file GMT147SPI-ST7789.cpp
+ * @brief Test program for ST7789P3 display driver on Raspberry Pi Pico
+ * @author Alejandro Moglia (@bartola-valves)
+ * @date 6th Oct 2025
+ * 
+ * WORKING BASELINE CONFIGURATION for ST7789P3 172x320 display
+ * Hardware: Raspberry Pi Pico + ST7789P3 1.47" TFT LCD (172x320)
+ * SPI Speed: 4 MHz (breadboard tested)
+ * SPI Mode: Mode 0 (CPOL_0, CPHA_0) - CRITICAL for ST7789P3
+ */
+
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
@@ -6,8 +18,8 @@
 #include "lib/oled/gfxfont.h" // Font definitions for graphics library
 #include "lib/hardware.h"     // Hardware configuration for OLED
 
-/** @brief Display dimensions for GMT147SPI display of 172x320 ST7789 LCD */
-const int lcd_width = 172;  ///< Display width in pixels
+/** @brief Display dimensions for ST7789P3 1.47" display (172x320 pixels) */
+const int lcd_width = 172;  ///< Display width in pixels (ST7789P3 variant)
 const int lcd_height = 320; ///< Display height in pixels
 
 int main()
@@ -32,9 +44,10 @@ int main()
     LCD_initDisplay(lcd_width, lcd_height);
     printf("Display initialized with %dx%d resolution\n", lcd_width, lcd_height);
 
-    // Set display orientation - 180° rotation for correct viewing
-    LCD_setRotation(2);
-    printf("Display rotation set to 180 degrees\n");
+    // Set display orientation
+    // Rotation values: 0 = 0°, 1 = 90°, 2 = 180°, 3 = 270°
+    LCD_setRotation(0); // ← Try 0 instead of 2
+    printf("Display rotation set to 0 degrees\n");
 
     printf("Creating framebuffer...\n");
     // Allocate framebuffer memory for graphics operations
