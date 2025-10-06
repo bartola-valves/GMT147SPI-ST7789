@@ -4,6 +4,13 @@
 // via SPI interface on the Raspberry Pi Pico microcontroller.
 // date: 4th August 2025
 //
+// ST7789P3 Variant Testing - 6th Oct 2025:
+// Testing with 172x320 ST7789P3 display
+// Changes made for P3 compatibility:
+// - SPI Mode changed from Mode 3 to Mode 0 (CPOL_0, CPHA_0)
+// - Speed set to 1MHz for reliable breadboard testing
+// - Init sequence verified compatible with P3 variant
+//
 
 #include "st7789.h"
 #include "pico/stdlib.h"
@@ -36,18 +43,24 @@ uint16_t st7789_pinTX = PICO_DEFAULT_SPI_TX_PIN;
 
 // uint16_t st7789_pinRST;
 
-static const uint8_t generic_st7789[] = { // Init commands for 7789 screens
-    9,                                    //  9 commands in list:
-    ST77XX_SWRESET, ST_CMD_DELAY,         //  1: Software reset, no args, w/delay
-    150,                                  //     ~150 ms delay
-    ST77XX_SLPOUT, ST_CMD_DELAY,          //  2: Out of sleep mode, no args, w/delay
-    10,                                   //      10 ms delay
-    ST77XX_COLMOD, 1 + ST_CMD_DELAY,      //  3: Set color mode, 1 arg + delay:
-    0x55,                                 //     16-bit color
-    10,                                   //     10 ms delay
-    ST77XX_MADCTL, 1,                     //  4: Mem access ctrl (directions), 1 arg:
-    0x08,                                 //     Row/col addr, bottom-top refresh
-    ST77XX_CASET, 4,                      //  5: Column addr set, 4 args, no delay:
+// Init commands for ST7789 screens
+// ST7789P3 Testing: This sequence is compatible with ST7789P3 variant
+// - COLMOD 0x55: 16-bit color (RGB565)
+// - MADCTL 0x08: Row/col addressing, bottom-top refresh
+// - INVON: Required for ST7789P3 proper color rendering
+// Date: 6th Oct 2025 - Testing with 172x320 ST7789P3 display
+static const uint8_t generic_st7789[] = {
+    9,                               //  9 commands in list:
+    ST77XX_SWRESET, ST_CMD_DELAY,    //  1: Software reset, no args, w/delay
+    150,                             //     ~150 ms delay
+    ST77XX_SLPOUT, ST_CMD_DELAY,     //  2: Out of sleep mode, no args, w/delay
+    10,                              //      10 ms delay
+    ST77XX_COLMOD, 1 + ST_CMD_DELAY, //  3: Set color mode, 1 arg + delay:
+    0x55,                            //     16-bit color
+    10,                              //     10 ms delay
+    ST77XX_MADCTL, 1,                //  4: Mem access ctrl (directions), 1 arg:
+    0x08,                            //     Row/col addr, bottom-top refresh
+    ST77XX_CASET, 4,                 //  5: Column addr set, 4 args, no delay:
     0x00,
     0, //     XSTART = 0
     0,
@@ -90,8 +103,13 @@ void LCD_setSPIperiph(spi_inst_t *s)
 
 void initSPI()
 {
-    spi_init(st7789_spi, 4000000); // 4 MHz - testing on final PCB
-    spi_set_format(st7789_spi, 16, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+    spi_init(st7789_spi, 1000000); // 1 MHz - breadboarding speed
+
+    // ST7789P3 Testing: Changed from SPI Mode 3 (CPOL_1, CPHA_1) to Mode 0 (CPOL_0, CPHA_0)
+    // ST7789P3 variant typically requires Mode 0 for reliable operation
+    // Date: 6th Oct 2025 - Testing with 172x320 ST7789P3 display
+    spi_set_format(st7789_spi, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+
     gpio_set_function(st7789_pinSCK, GPIO_FUNC_SPI);
     gpio_set_function(st7789_pinTX, GPIO_FUNC_SPI);
 
@@ -151,14 +169,20 @@ void ST7789_RegData()
 void ST7789_WriteCommand(uint8_t cmd)
 {
     ST7789_RegCommand();
-    spi_set_format(st7789_spi, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+    // ST7789P3: Changed to Mode 0 (CPOL_0, CPHA_0) for P3 variant compatibility
+    // Previous: Mode 3 (CPOL_1, CPHA_1) - caused hangs on large data transfers
+    // Date: 6th Oct 2025
+    spi_set_format(st7789_spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     spi_write_blocking(st7789_spi, &cmd, sizeof(cmd));
 }
 
 void ST7789_WriteData(const uint8_t *buff, size_t buff_size)
 {
     ST7789_RegData();
-    spi_set_format(st7789_spi, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+    // ST7789P3: Changed to Mode 0 (CPOL_0, CPHA_0) for P3 variant compatibility
+    // Previous: Mode 3 (CPOL_1, CPHA_1) - caused hangs on large data transfers
+    // Date: 6th Oct 2025
+    spi_set_format(st7789_spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     spi_write_blocking(st7789_spi, buff, buff_size);
 }
 
@@ -318,7 +342,11 @@ void LCD_WriteBitmap(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *b
     ST7789_Select();
     LCD_setAddrWindow(x, y, w, h); // Clipped area
     ST7789_RegData();
-    spi_set_format(st7789_spi, 16, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+    // ST7789P3: Changed to Mode 0 (CPOL_0, CPHA_0) for P3 variant compatibility
+    // This was the primary cause of GFX_flush() hanging - Mode 3 fails on large transfers
+    // Previous: Mode 3 (CPOL_1, CPHA_1) - caused hangs when writing framebuffer
+    // Date: 6th Oct 2025
+    spi_set_format(st7789_spi, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 #ifdef USE_DMA
     dma_channel_configure(dma_tx, &dma_cfg,
                           &spi_get_hw(st7789_spi)->dr, // write address
@@ -339,7 +367,10 @@ void LCD_WritePixel(int x, int y, uint16_t col)
     ST7789_Select();
     LCD_setAddrWindow(x, y, 1, 1); // Clipped area
     ST7789_RegData();
-    spi_set_format(st7789_spi, 16, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+    // ST7789P3: Changed to Mode 0 (CPOL_0, CPHA_0) for P3 variant compatibility
+    // Previous: Mode 3 (CPOL_1, CPHA_1) - inconsistent with other functions
+    // Date: 6th Oct 2025
+    spi_set_format(st7789_spi, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     spi_write16_blocking(st7789_spi, &col, 1);
     ST7789_DeSelect();
 }

@@ -13,7 +13,7 @@ const int lcd_height = 320; ///< Display height in pixels
 int main()
 {
     stdio_init_all();
-
+    sleep_ms(2000); // Wait for USB serial to initialize
     // configure the ST7789 display
     // Configure SPI peripheral instance in line with hardware.h definitions
     spi_inst_t *st7789_spi = spi1;
@@ -46,10 +46,18 @@ int main()
     GFX_fillScreen(ST77XX_BLACK); // Fill with black
     GFX_flush();                  // Send to display immediately
     sleep_ms(100);                // Let it settle
-
+    printf("Drawing text...\n");
     GFX_setTextSize(2);
     GFX_setTextColor(ST77XX_WHITE);
     GFX_setCursor(10, 10);
     GFX_printf("Hello ST7789!");
     GFX_flush();
+    printf("Text drawn!\n");
+    // ✅ REQUIRED: Infinite loop to prevent main() from returning
+    printf("Entering main loop...\n");
+    while (1)
+    {
+        tight_loop_contents(); // Hint to SDK that this is intentional
+        sleep_ms(100);         // Small delay to prevent busy-waiting
+    }
 }

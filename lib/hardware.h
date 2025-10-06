@@ -4,7 +4,7 @@
  Rev: 0.1
  Author: Alejandro Moglia
  valves@bartola.co.uk
- Github:
+ Github: https://github.com/bartola-valves/GMT147SPI-ST7789
 */
 
 /*
@@ -13,7 +13,7 @@ Libraries located on lib/oled/
 SPI1 used for OLED display
 
 OLED_RESET on GPIO 6
-OLED_SDA on GPIO 7
+OLED_SDA on GPIO 11
 OLED_DC on GPIO 8
 OLED_CS on GPIO 9
 OLED_SCK on GPIO 10
